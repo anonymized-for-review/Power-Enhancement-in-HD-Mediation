@@ -9,7 +9,7 @@ The repository is organized into two main components:
 
 An R package, **`POEM`**, is developed to facilitate practical implementations and is used throughout the codebase. 
 
-- Package link: `[https://drive.google.com/drive/folders/1-hNpapZ51IE0m_flELAqohne1CPJrwgD?usp=sharing]`
+- Package link: https://drive.google.com/drive/folders/1-hNpapZ51IE0m_flELAqohne1CPJrwgD?usp=sharing
 
 [Note: To comply with JASA’s double-blind review policy, we have not yet submitted the package to R CRAN, but we plan to do so after the review process is complete.]
 
