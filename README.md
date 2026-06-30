@@ -7,7 +7,7 @@ The repository is organized into two main components:
 - `Simulation/`: simulation scripts for continuous, dichotomous, and count outcomes
 - `RealDataAnalysis/`: empirical analysis scripts and processed datasets used in the paper
 
-An R package, `**POEM**`, is developed to facilitate practical implementations and is used throughout the codebase. 
+An R package, **`POEM`**, is developed to facilitate practical implementations and is used throughout the codebase. 
 
 - Package link: `[https://drive.google.com/drive/folders/1-hNpapZ51IE0m_flELAqohne1CPJrwgD?usp=sharing]`
 
