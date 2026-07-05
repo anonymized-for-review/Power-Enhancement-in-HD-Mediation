@@ -15,9 +15,12 @@ An R package, **`POEM`**, is developed to facilitate practical implementations a
 
 ## Instructions to install the `POEM` package: 
 
-`download.file( "https://drive.google.com/uc?export=download&id=1QHfmx55aJZJ8MKZSIKXCDCIpxJoLcSUH", "POEM_0.1.0.tar.gz", mode = "wb")`
-
-`remotes::install_local("POEM_0.1.0.tar.gz", build_vignettes = TRUE, dependencies = TRUE)`
+`remotes::install_url(
+  "https://raw.githubusercontent.com/anonymized-for-review/POEM/main/POEM_0.1.0_anonymized.tar.gz",
+  build_vignettes = TRUE,
+  dependencies = TRUE
+)
+`
 
 ## Repository Structure
 
