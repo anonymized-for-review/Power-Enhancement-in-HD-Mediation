@@ -29,8 +29,8 @@ The following R packages are required:
 - `glmnet`
 - `ncvreg`
 - `POEM`
-- `freebird` — removed from CRAN, see installation notes below
-- `globaltest` — on Bioconductor, see installation notes below
+- `freebird` — see installation notes below
+- `globaltest` — see installation notes below
 
 `freebird` was removed from the CRAN repository and archived, but it can still be installed from the CRAN archive using:
 `remotes::install_version("freebird")`
