@@ -28,8 +28,8 @@ Required R packages for the proposed `PE-HD(G)MM` implementation:
 
 Required R packages for the comparison methods:
 
-- `freebird`
-- `globaltest`
+- `freebird` — see installation notes below
+- `globaltest` — see installation notes below
 
 `freebird` was removed from the CRAN repository and archived, but it can still be installed from the CRAN archive using:
 `remotes::install_version("freebird")`
