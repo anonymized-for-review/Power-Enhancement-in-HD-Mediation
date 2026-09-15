@@ -1,7 +1,20 @@
 # code-utils-comparison-methods-logistic.R
 
-# Djordjilovic et al. (2019)'s method - "globaltest" R package 
 library(globaltest)
+#' Run Djordjilovic et al. (2019)'s global test for mediation with a binary
+#' (logistic) outcome, via `globaltest::gt()`
+#'
+#' Combines a global test of M -> Y (adjusted for X and, if present, S) with
+#' a global test of X -> M (adjusted for S), taking the max p-value as a
+#' conservative test of no mediation.
+#'
+#' @param X The n by q exposure matrix.
+#' @param Y The n-dimensional binary (0/1) outcome vector.
+#' @param M The n by p mediator matrix (column names are auto-assigned M1..Mp).
+#' @param S The n by s confounding variables matrix, or NULL if no confounders.
+#' @return A list with:
+#'   - pval_Vera: overall p-value (max of the M->Y and X->M global test p-values)
+#'   - Vera_time: elapsed run time in seconds
 Vera2019_GLM <- function(X,Y,M, S=NULL){
   Vera_start = Sys.time()
   colnames(M) <- paste0("M", 1:ncol(M))
@@ -32,10 +45,30 @@ Vera2019_GLM <- function(X,Y,M, S=NULL){
 }
 
 
-## Guo et al. (2023, JBES)
 library(stats)
 library(glmnet)
 library(ncvreg)
+#' Guo et al. (2023, JBES)'s high-dimensional mediation test for a binary
+#' (logistic) outcome
+#'
+#' Selects mediators via SCAD-penalized logistic regression (tuned by HBIC
+#' over `lamb_grid`) and then performs inference on the indirect (beta) and
+#' direct (alpha1) effects.
+#'
+#' @param X The n by q exposure matrix.
+#' @param Y The n-dimensional binary (0/1) outcome vector.
+#' @param M The n by p mediator matrix; columns must have nonzero variance.
+#' @param Z The n by s confounding variables matrix, or NULL if no confounders.
+#' @param Y_family Outcome family; only "binomial" is supported here.
+#' @param scale Logical; if TRUE, X, M, Z are standardized before estimation.
+#' @param lamb_grid Grid of SCAD tuning parameters used to select active
+#'   mediators (mediators are penalized; X and Z are not).
+#' @param lamb_grid0 Currently unused (kept for interface parity with the
+#'   linear-outcome version); defaults to lamb_grid.
+#' @return A list with:
+#'   - stat_HDGMM: test statistic for the indirect (mediation) effect
+#'   - pval_HDGMM: p-value for the indirect effect (chi-square with q df)
+#'   - beta_hat: estimated indirect effect(s) (0 if no mediators selected)
 HDGMM_logistic <- function(X, Y, M, Z = NULL,
                            Y_family = "binomial",
                            scale = TRUE,
@@ -175,6 +208,18 @@ HDGMM_logistic <- function(X, Y, M, Z = NULL,
 
 
 # Internal helper:
+#' SCAD-penalized coordinate-descent update (thresholding operator) for one
+#' coefficient, as used inside `MedReg`'s local linear approximation loop
+#'
+#' @param z the (unpenalized) univariate least-squares/score update for the
+#'   coefficient (e.g. `xwr/n + (xwx/n)*a[j]` in `MedReg`)
+#' @param l1 the L1 (SCAD) penalty scale for this coefficient
+#'   (`lambda * penalty.factor[j] * alpha`)
+#' @param l2 the L2 (ridge/elastic-net) penalty scale for this coefficient
+#'   (`lambda * penalty.factor[j] * (1 - alpha)`)
+#' @param gamma the SCAD shape parameter
+#' @param v the coordinate's curvature/Hessian term (`xwx/n`)
+#' @return the updated (thresholded) coefficient value
 SCAD <- function(z, l1, l2, gamma,v) {
   if (abs(z) <= l1)
   {return(0)}
@@ -187,6 +232,16 @@ SCAD <- function(z, l1, l2, gamma,v) {
 }
 
 # Internal helper:
+#' MCP-penalized coordinate-descent update (thresholding operator) for one
+#' coefficient, as used inside `MedReg`'s local linear approximation loop
+#'
+#' @param z the (unpenalized) univariate least-squares/score update for the
+#'   coefficient
+#' @param l1 the L1 (MCP) penalty scale for this coefficient
+#' @param l2 the L2 (ridge/elastic-net) penalty scale for this coefficient
+#' @param gamma the MCP shape parameter
+#' @param v the coordinate's curvature/Hessian term
+#' @return the updated (thresholded) coefficient value
 MCP <- function(z, l1, l2, gamma, v){
   if (abs(z) <= l1) return(0)
   else if (abs(z) <= gamma*l1*(1+l2)) return(sign(z)*(abs(z)-l1)/(v*(1+l2-1/gamma)))
@@ -195,6 +250,12 @@ MCP <- function(z, l1, l2, gamma, v){
 
 
 # Internal helper:
+#' Logistic (inverse-logit) link function, with clipping for numerical
+#' stability at extreme linear predictor values
+#'
+#' @param eta a scalar linear predictor value
+#' @return the corresponding probability `exp(eta)/(1+exp(eta))`, clipped to
+#'   1 if eta > 10 and to 0 if eta < -10
 p_binomial <- function(eta) {
   if (eta > 10) {
     return(1)
@@ -206,11 +267,56 @@ p_binomial <- function(eta) {
 }
 
 # Internal helper:
+#' Second derivative of the logistic log-partition function b(z) = log(1+e^z),
+#' evaluated elementwise and returned as a diagonal weight matrix
+#'
+#' @param z a numeric vector of linear predictor values (length n)
+#' @return an n by n diagonal matrix with entries `exp(z)/(1+exp(z))^2`
+#'   (i.e. the Bernoulli variance function pi*(1-pi) at each observation),
+#'   used as the weighting matrix in the sandwich variance calculations of
+#'   `Testing_bino`
 dedeb <- function(z){
   return(diag(c(exp(z)/(1+exp(z))^2)))
 }
 
 # Internal helper:
+#' Fit a penalized (SCAD/MCP) GLM path via coordinate descent with an
+#' active-set/strong-rule screening strategy (used to select mediators for
+#' the binary-outcome HDGMM procedure)
+#'
+#' Note: only `family = "binomial"` is currently implemented in the function
+#' body below (gaussian/poisson are accepted as arguments but not handled).
+#'
+#' @param X The n by p design matrix (standardized internally via `std()`).
+#' @param y The n-dimensional response vector.
+#' @param family Response family: "gaussian", "binomial", or "poisson"
+#'   (only "binomial" is implemented).
+#' @param penalty Penalty type: "MCP", "SCAD", or "lasso".
+#' @param gamma The penalty shape parameter (default 3.7 for SCAD, 3 otherwise).
+#' @param alpha Elastic-net mixing parameter (1 = pure L1/SCAD/MCP penalty).
+#' @param lambda.min Smallest lambda as a fraction of lambda_max (unused when
+#'   `lambda` is supplied explicitly).
+#' @param nlambda Number of lambda values in the automatically generated path
+#'   (unused when `lambda` is supplied explicitly).
+#' @param lambda A vector of tuning parameter value(s) to fit at.
+#' @param eps Convergence tolerance for the coordinate-descent inner loop.
+#' @param max_iter Maximum total number of coordinate-descent iterations.
+#' @param convex Unused placeholder (kept for interface compatibility).
+#' @param dfmax Maximum number of nonzero coefficients allowed before the
+#'   path is stopped early.
+#' @param penalty.factor A p-vector of per-coefficient penalty weights
+#'   (0 = unpenalized).
+#' @param warn Logical; if TRUE, warn when the fitted model is (near-)saturated.
+#' @param returnX Unused placeholder (kept for interface compatibility).
+#' @param Intercept Logical; if TRUE, an intercept is estimated and included
+#'   in the returned `beta`.
+#' @return A list with:
+#'   - b: matrix (p by length(lambda)) of standardized-scale coefficients
+#'   - beta: matrix of coefficients on the original (unstandardized) scale
+#'     (with intercept in the first row if `Intercept = TRUE`)
+#'   - Dev: deviance at each lambda
+#'   - Eta: matrix (n by length(lambda)) of fitted linear predictors
+#'   - iter: number of coordinate-descent iterations used at each lambda
 MedReg <- function(X, y, family=c("gaussian","binomial","poisson"), penalty=c("MCP", "SCAD", "lasso"),
                    gamma=switch(penalty, SCAD=3.7, 3), alpha=1, lambda.min=ifelse(n>p,.001,.05), nlambda=100,
                    lambda, eps=1e-4, max_iter=10000, convex=TRUE, dfmax=p+1, penalty.factor=rep(1, ncol(x)),
@@ -420,6 +526,27 @@ MedReg <- function(X, y, family=c("gaussian","binomial","poisson"), penalty=c("M
 
 
 # Internal helper:
+#' Calculate HBIC for a specific tuning parameter lambda, for the
+#' penalized-logistic mediator-selection step of `HDGMM_logistic`
+#'
+#' @param X The n by q exposure matrix.
+#' @param Y The n-dimensional binary (0/1) outcome vector.
+#' @param M The n by p mediator matrix.
+#' @param S The n by s confounding variables matrix, or NULL if no confounders.
+#' @param w A (p+q+s)-vector of penalty.factor weights (0 = unpenalized;
+#'   typically only the mediator block is penalized).
+#' @param lamb The tuning parameter lambda for the penalized fit.
+#' @param Y_family Outcome family passed to `MedReg` (only "binomial" is
+#'   supported).
+#' @param penalty_type Penalty type passed to `MedReg` ("SCAD", "MCP", or
+#'   "lasso").
+#' @return A list with:
+#'   - HBIC: HBIC score for this lambda
+#'   - logLkhd: fitted model's average log-likelihood
+#'   - alpha: full estimated coefficient vector (length p+q+s)
+#'   - alpha0: estimated mediator coefficients
+#'   - alpha1: estimated exposure coefficients
+#'   - alpha2: estimated confounder coefficients (NULL if S is NULL)
 HBIC_bino <- function(X,Y,M,S = NULL,w,lamb,
                       Y_family = "binomial",
                       penalty_type = "SCAD"){
@@ -478,6 +605,32 @@ HBIC_bino <- function(X,Y,M,S = NULL,w,lamb,
 
 
 # Internal helper:
+#' Compute test statistics and covariances for the indirect (beta) and
+#' direct (alpha1) effects in the logistic HDGMM procedure, given a set of
+#' selected mediators
+#'
+#' @param X The n by q exposure matrix.
+#' @param Y The n-dimensional binary (0/1) outcome vector.
+#' @param M_A The n by p matrix of *selected* mediators (columns in active
+#'   set A).
+#' @param S The n by s confounding variables matrix, or NULL if no confounders.
+#' @param phi0 Dispersion parameter (fixed at 1 for the binomial family).
+#' @param a0_hat Estimated mediator coefficients (on M_A); if NULL, refit via
+#'   `glm(Y ~ 0 + M_A + X [+ S])`.
+#' @param a1_hat Estimated exposure coefficients; if NULL, refit as above.
+#' @param a2_hat Estimated confounder coefficients (unused if S is NULL); if
+#'   NULL and S is supplied, refit as above.
+#' @param Y_family Outcome family passed to `glm()` (only "binomial" is
+#'   supported).
+#' @return A list with:
+#'   - beta_hat: estimated indirect effect (regression of the mediator-index
+#'     M_A %*% alpha0 on X, partialing out S if present)
+#'   - alpha0_hat, alpha1_hat, alpha2_hat: (re-)estimated coefficients
+#'   - var_beta: estimated covariance matrix of beta_hat
+#'   - var_alpha1: estimated covariance matrix of alpha1_hat
+#'   - Sn: Wald test statistic for the indirect effect beta_hat
+#'   - Tn: likelihood-ratio test statistic for the direct effect alpha1
+#'   - sigma2: estimated residual variance of the mediator-index regression
 Testing_bino <-function(X,Y,M_A, S = NULL, phi0=1,
                         a0_hat=NULL, a1_hat=NULL,a2_hat = NULL,
                         Y_family = "binomial"){
@@ -653,6 +806,19 @@ Testing_bino <-function(X,Y,M_A, S = NULL, phi0=1,
 }
 
 # Internal helper:
+#' Average logistic log-likelihood for a linear predictor built from X, M,
+#' and (optionally) S
+#'
+#' @param X The n by q exposure matrix.
+#' @param Y The n-dimensional binary (0/1) outcome vector.
+#' @param M The n by p mediator matrix.
+#' @param alpha0 Coefficients on M.
+#' @param alpha1 Coefficients on X.
+#' @param S The n by s confounding variables matrix, or NULL if no confounders.
+#' @param alpha2 Coefficients on S (unused if S is NULL).
+#' @return A scalar: the average per-observation logistic log-likelihood,
+#'   `mean(Y * eta - log(1 + exp(eta)))`, where `eta = M %*% alpha0 +
+#'   X %*% alpha1 [+ S %*% alpha2]`.
 Ln <- function(X, Y, M, alpha0, alpha1, S = NULL, alpha2 = NULL) {
   eta <- (M%*%alpha0 + X%*% alpha1)
   if (!is.null(S)) {
