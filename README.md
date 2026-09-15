@@ -22,6 +22,20 @@ An R package, **`POEM`**, is developed to facilitate practical implementations a
 )
 `
 
+### Requirements
+
+Required R packages for the proposed `PE-HD(G)MM` implementation:
+
+- `POEM`
+- `stats`
+- `glmnet`
+- `ncvreg`
+
+Required R packages for the comparison methods:
+
+- `freebird` — see installation notes below
+- `globaltest` — see installation notes below
+
 
 ## Simulation
 
