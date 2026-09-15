@@ -13,7 +13,7 @@ An R package, **`POEM`**, is developed to facilitate practical implementations a
 
 [Note: To comply with JASA’s double-blind review policy, we have not yet submitted the package to R CRAN, but we plan to do so after the review process is complete.]
 
-## Instructions to install the `POEM` package: 
+### Instructions to install the `POEM` package: 
 
 `remotes::install_url(
   "https://raw.githubusercontent.com/anonymized-for-review/POEM/main/POEM_0.1.0_anonymized.tar.gz",
@@ -22,7 +22,8 @@ An R package, **`POEM`**, is developed to facilitate practical implementations a
 )
 `
 
-## `Simulation/`
+
+## Simulation
 
 This folder contains the main scripts for reproducing the simulation studies of the proposed power-enhanced heterogeneous mediation models.
 
@@ -34,7 +35,8 @@ This folder contains the main scripts for reproducing the simulation studies of 
 - `code-utils-comparison-methods-poisson.R`: helper functions and comparison methods for count outcomes
 - `README.md`: additional notes specific to the simulation studies
 
-## `RealDataAnalysis/`
+
+## RealDataAnalysis
 
 This folder contains the empirical example based on World Bank Open Data and the WHO Global Health Expenditure Database, along with processed datasets prepared for the paper.
 
@@ -43,6 +45,7 @@ This folder contains the empirical example based on World Bank Open Data and the
 - `data/`: processed `.RData` files for five public-health outcomes
 - `data_description.R`: quick data loading and dimension checks
 - `README.md`: dataset descriptions and source notes
+
 
 ## Data Sources
 
