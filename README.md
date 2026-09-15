@@ -21,8 +21,28 @@ An R package, **`POEM`**, is developed to facilitate practical implementations a
   dependencies = TRUE
 )
 `
+## Dependencies
 
-## Repository Structure
+The following R packages are required:
+
+- `stats`
+- `glmnet`
+- `ncvreg`
+- `POEM`
+- `freebird` — removed from CRAN, see installation notes below
+- `globaltest` — on Bioconductor, see installation notes below
+
+`freebird` was removed from the CRAN repository and archived, but it can still be installed from the CRAN archive using:
+`remotes::install_version("freebird")`
+
+`globaltest` is on Bioconductor, so install it with:
+
+` 
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("globaltest")
+`
+
 
 ### `Simulation/`
 
