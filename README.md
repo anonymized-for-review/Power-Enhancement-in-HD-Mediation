@@ -21,30 +21,8 @@ An R package, **`POEM`**, is developed to facilitate practical implementations a
   dependencies = TRUE
 )
 `
-## Dependencies
 
-The following R packages are required:
-
-- `stats`
-- `glmnet`
-- `ncvreg`
-- `POEM`
-- `freebird` — see installation notes below
-- `globaltest` — see installation notes below
-
-`freebird` was removed from the CRAN repository and archived, but it can still be installed from the CRAN archive using:
-`remotes::install_version("freebird")`
-
-`globaltest` is on Bioconductor, so install it with:
-
-` 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install("globaltest")
-`
-
-
-### `Simulation/`
+## `Simulation/`
 
 This folder contains the main scripts for reproducing the simulation studies of the proposed power-enhanced heterogeneous mediation models.
 
@@ -56,7 +34,7 @@ This folder contains the main scripts for reproducing the simulation studies of 
 - `code-utils-comparison-methods-poisson.R`: helper functions and comparison methods for count outcomes
 - `README.md`: additional notes specific to the simulation studies
 
-### `RealDataAnalysis/`
+## `RealDataAnalysis/`
 
 This folder contains the empirical example based on World Bank Open Data and the WHO Global Health Expenditure Database, along with processed datasets prepared for the paper.
 
