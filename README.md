@@ -33,8 +33,8 @@ Required R packages for the proposed `PE-HD(G)MM` implementation:
 
 Required R packages for the comparison methods:
 
-- `freebird` — see installation notes below
-- `globaltest` — see installation notes below
+- `freebird` — see installation notes in `Simulation/README-Simulation.md`
+- `globaltest` — see installation notes in `Simulation/README-Simulation.md`
 
 
 ## Simulation
