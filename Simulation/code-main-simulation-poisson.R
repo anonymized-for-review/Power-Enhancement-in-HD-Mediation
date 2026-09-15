@@ -119,13 +119,12 @@ for (c1 in c1_list[parid])
                                         scale=FALSE, lambda_grid = lamb_grid)
   pval_PEHDGMM <- output_PEHDGMM$value[output_PEHDGMM$term == "pval_pe"]
   
-  ## HDGMM (Guo et al., 2023)
+  ## HDGMM: Guo et al. (2023)
   output_HDGMM <- HDGMM_poisson(scale(X), Y, scale(M), S, 
                                 scale=FALSE, lamb_grid=lamb_grid)
   pval_HDGMM <- output_HDGMM$pval_HDGMM
   
-
-  ## Djordjilovic et al. (2019)'s method
+  ## GlobalTest: Djordjilovic et al. (2019) 
   output_Vera <- Vera2019_Poisson(scale(X), Y, scale(M), S=S)
   pval_Vera <- output_Vera$pval_Vera
   

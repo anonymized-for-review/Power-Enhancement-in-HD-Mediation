@@ -89,12 +89,12 @@ for (c1 in c1_list[parid])
   pval_PEHDMM <- output_PEHDMM$value[output_PEHDMM$term == "pval_pe"]
   
   
-  ## Guo et al. (2022, JoE; 2022, JASA)
+  ## HDMM: Guo et al. (2022, JoE; 2022, JASA)
   output_HDMM <- HDGMM_linear(scale(X), Y-mean(Y), scale(M),  
                               scale=FALSE,  lamb_grid=lamb_grid, lamb_grid0=lamb_grid0)
   pval_HDMM <- output_HDMM$pval_HDGMM
   
-  ## Zhou et al. (2020)
+  ## HILMA: Zhou et al. (2020)
   if(excludeComparison)
     {
     output_zhou <- NULL
